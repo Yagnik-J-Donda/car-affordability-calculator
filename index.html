@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Car Affordability – 20-4-10 Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* minimal, readable defaults only; we can do a CSS phase later */
+    :root { --gap: 14px; --pad: 16px; --radius: 12px; --max: 980px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#f7f7f9; color:#111; }
+    .wrap { max-width: var(--max); margin: 28px auto; padding: 0 var(--pad); }
+    h1 { font-size: 1.4rem; margin: 0 0 10px; }
+    .card { background: #fff; border-radius: var(--radius); box-shadow: 0 1px 8px rgba(0,0,0,0.06); padding: var(--pad); }
+    .grid { display: grid; gap: var(--gap); grid-template-columns: repeat(12, 1fr); }
+    .col-6 { grid-column: span 6; } .col-4 { grid-column: span 4; } .col-3 { grid-column: span 3; } .col-12{ grid-column: span 12; }
+    label { font-size: 0.9rem; font-weight: 600; display:block; margin-bottom: 6px; }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #d8d8de; background:#fff; font-size: 0.95rem; }
+    .row { display: grid; gap: var(--gap); grid-template-columns: repeat(12, 1fr); }
+    .btn { cursor: pointer; border: 1px solid #111; background:#111; color:#fff; padding: 12px 16px; border-radius: 10px; font-weight:700; }
+    .btn.secondary { background:#fff; color:#111; }
+    .actions { display:flex; gap:10px; flex-wrap: wrap; }
+    .muted { color:#666; font-size: 0.9rem; }
+    .out { background:#0d1326; color:#eaf2ff; border-radius: var(--radius); padding: var(--pad); }
+    .kv { display:flex; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px dashed #39415c; }
+    .kv:last-child { border-bottom: none; }
+    .kv b { font-weight: 700; }
+    .pill { display:inline-block; background:#eef2ff; color:#203a93; border:1px solid #cbd5ff; padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; }
+    .section-title { margin: 16px 0 6px; font-size: 1rem; font-weight:800; }
+    @media (max-width: 860px){ .col-6,.col-4,.col-3{ grid-column: span 12; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Car Affordability – 20-4-10 Calculator</h1>
+    <div class="card" role="group" aria-label="inputs">
+      <div class="grid">
+        <div class="col-6">
+          <label>On-road price (₹)</label>
+          <input id="onroad" type="number" inputmode="decimal" value="2600000" />
+          <div class="muted">Example: ₹26,00,000 for Innova Crysta GX+ 8-STR in Surat (approx)</div>
+        </div>
+        <div class="col-3">
+          <label>Down payment (%)</label>
+          <input id="downPct" type="number" inputmode="decimal" value="20" />
+        </div>
+        <div class="col-3">
+          <label>Loan tenure (months)</label>
+          <input id="months" type="number" inputmode="numeric" value="48" />
+        </div>
+
+        <div class="col-3">
+          <label>Interest (APR %)</label>
+          <input id="apr" type="number" inputmode="decimal" value="9" />
+        </div>
+        <div class="col-3">
+          <label>Fuel price (₹/L)</label>
+          <input id="fuelPrice" type="number" inputmode="decimal" value="92" />
+        </div>
+        <div class="col-3">
+          <label>Mileage (km/L)</label>
+          <input id="mileage" type="number" inputmode="decimal" value="13" />
+        </div>
+        <div class="col-3">
+          <label>Monthly km</label>
+          <input id="kmPerMonth" type="number" inputmode="numeric" value="2500" />
+        </div>
+
+        <div class="col-4">
+          <label>Annual insurance (₹)</label>
+          <input id="insYear" type="number" inputmode="decimal" value="60000" />
+        </div>
+        <div class="col-4">
+          <label>Annual maintenance (₹)</label>
+          <input id="maintYear" type="number" inputmode="decimal" value="48000" />
+        </div>
+        <div class="col-4">
+          <label>Transport cap (% of income)</label>
+          <input id="capPct" type="number" inputmode="decimal" value="10" />
+        </div>
+
+        <div class="col-12 actions">
+          <button class="btn" id="calcBtn">Tell me required income</button>
+          <button class="btn secondary" id="innovaPreset">Preset: Innova Crysta 8-STR</button>
+          <span class="pill">Rule: 20-4-10</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Results</div>
+    <div class="out" id="results" aria-live="polite">
+      <div class="kv"><span>Down payment (₹)</span><b id="outDown">—</b></div>
+      <div class="kv"><span>Amount financed (₹)</span><b id="outFinance">—</b></div>
+      <div class="kv"><span>EMI (₹/month)</span><b id="outEmi">—</b></div>
+      <div class="kv"><span>Fuel (₹/month)</span><b id="outFuel">—</b></div>
+      <div class="kv"><span>Insurance (₹/month)</span><b id="outIns">—</b></div>
+      <div class="kv"><span>Maintenance (₹/month)</span><b id="outMaint">—</b></div>
+      <div class="kv"><span>Total transport (₹/month)</span><b id="outTotal">—</b></div>
+      <div class="kv"><span>Required income @ cap % (₹/month)</span><b id="outReq">—</b></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">Quick comparison (what-if caps)</div>
+      <div class="kv"><span>Required income @ 10%</span><b id="out10">—</b></div>
+      <div class="kv"><span>Required income @ 12.5%</span><b id="out125">—</b></div>
+      <div class="kv"><span>Required income @ 15%</span><b id="out15">—</b></div>
+      <div class="muted" style="margin-top:8px">Tip: Many households stretch beyond 10%. This lets you see the effect safely.</div>
+    </div>
+  </div>
+
+  <script>
+    const fmtINR = (n) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+    function calc() {
+      const onroad = +document.getElementById('onroad').value || 0;
+      const downPct = (+document.getElementById('downPct').value || 0) / 100;
+      const months = +document.getElementById('months').value || 0;
+      const apr = (+document.getElementById('apr').value || 0) / 100;
+      const fuelPrice = +document.getElementById('fuelPrice').value || 0;
+      const mileage = +document.getElementById('mileage').value || 0;
+      const kmPerMonth = +document.getElementById('kmPerMonth').value || 0;
+      const insYear = +document.getElementById('insYear').value || 0;
+      const maintYear = +document.getElementById('maintYear').value || 0;
+      const capPct = (+document.getElementById('capPct').value || 0) / 100;
+
+      // Down payment & finance
+      const down = onroad * downPct;
+      const principal = Math.max(onroad - down, 0);
+
+      // EMI using standard amortization
+      const r = apr / 12;          // monthly interest rate
+      const n = months;            // total months
+      let emi = 0;
+      if (r > 0 && n > 0) {
+        const pow = Math.pow(1 + r, n);
+        emi = principal * r * pow / (pow - 1);
+      } else if (n > 0) {
+        emi = principal / n; // zero interest edge case
+      }
+
+      // Monthly operating costs
+      const fuelLitres = mileage > 0 ? (kmPerMonth / mileage) : 0;
+      const fuelMonthly = fuelLitres * fuelPrice;
+      const insMonthly = insYear / 12;
+      const maintMonthly = maintYear / 12;
+
+      const totalTransport = emi + fuelMonthly + insMonthly + maintMonthly;
+
+      // Required income at cap percentage and what-ifs
+      const reqAtCap = capPct > 0 ? totalTransport / capPct : 0;
+      const req10 = totalTransport / 0.10;
+      const req125 = totalTransport / 0.125;
+      const req15 = totalTransport / 0.15;
+
+      // Output
+      document.getElementById('outDown').textContent = '₹ ' + fmtINR(down);
+      document.getElementById('outFinance').textContent = '₹ ' + fmtINR(principal);
+      document.getElementById('outEmi').textContent = '₹ ' + fmtINR(emi);
+      document.getElementById('outFuel').textContent = '₹ ' + fmtINR(fuelMonthly);
+      document.getElementById('outIns').textContent = '₹ ' + fmtINR(insMonthly);
+      document.getElementById('outMaint').textContent = '₹ ' + fmtINR(maintMonthly);
+      document.getElementById('outTotal').textContent = '₹ ' + fmtINR(totalTransport);
+      document.getElementById('outReq').textContent = (capPct ? (capPct*100).toFixed(1) : '—') + '% → ₹ ' + fmtINR(reqAtCap);
+
+      document.getElementById('out10').textContent = '₹ ' + fmtINR(req10);
+      document.getElementById('out125').textContent = '₹ ' + fmtINR(req125);
+      document.getElementById('out15').textContent = '₹ ' + fmtINR(req15);
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', calc);
+
+    document.getElementById('innovaPreset').addEventListener('click', () => {
+      // Sensible Surat defaults for Innova Crysta 8-STR (adjust anytime)
+      document.getElementById('onroad').value = 2600000;   // ₹26.0L (approx)
+      document.getElementById('downPct').value = 20;       // 20%
+      document.getElementById('months').value = 48;        // 4 years
+      document.getElementById('apr').value = 9;            // 9% APR
+      document.getElementById('fuelPrice').value = 92;     // Diesel price
+      document.getElementById('mileage').value = 13;       // km/L
+      document.getElementById('kmPerMonth').value = 2500;  // monthly driving
+      document.getElementById('insYear').value = 60000;    // ₹60k/year
+      document.getElementById('maintYear').value = 48000;  // ₹48k/year
+      document.getElementById('capPct').value = 10;        // 10% rule
+      calc();
+    });
+
+    // Auto-calc on first load with current defaults
+    calc();
+  </script>
+</body>
+</html>
